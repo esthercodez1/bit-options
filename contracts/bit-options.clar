@@ -335,3 +335,42 @@
         (ok true)
     )
 )
+
+;; Utility functions
+
+(define-private (get-current-price)
+    (get price (unwrap! (map-get? price-feeds "BTC-USD") u0))
+)
+
+(define-private (get-option-id (option {
+        writer: principal,
+        holder: (optional principal),
+        collateral-amount: uint,
+        strike-price: uint,
+        premium: uint,
+        expiry: uint,
+        is-exercised: bool,
+        option-type: (string-ascii 4),
+        state: (string-ascii 9)
+    }))
+    (var-get next-option-id)
+)
+
+;; Add function to check if token is approved
+(define-private (is-approved-token (token principal))
+    (default-to false (map-get? approved-tokens token))
+)
+
+(define-private (is-allowed-symbol (symbol (string-ascii 10)))
+    (default-to false (map-get? allowed-symbols symbol))
+)
+
+;; Update helper functions for validation
+(define-private (is-valid-principal (address principal))
+    (and 
+        (not (is-eq address (as-contract tx-sender)))  ;; Can't be the contract itself
+        (not (is-eq address .base))  ;; Can't be base contract
+        (not (is-eq address tx-sender))  ;; Can't be the owner (prevent self-targeting)
+        true  ;; Remove the principal-destruct? check as it's not needed
+    )
+)
