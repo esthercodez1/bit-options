@@ -423,3 +423,42 @@
         (ok true)
     )
 )
+
+(define-public (update-price-feed 
+    (symbol (string-ascii 10))
+    (price uint)
+    (timestamp uint))
+    (begin
+        (asserts! (is-eq tx-sender (var-get contract-owner)) ERR-NOT-AUTHORIZED)
+        (asserts! (is-allowed-symbol symbol) ERR-INVALID-SYMBOL)
+        (asserts! (>= timestamp block-height) ERR-INVALID-TIMESTAMP)
+        (asserts! (> price u0) ERR-INVALID-STRIKE-PRICE)
+        
+        (map-set price-feeds symbol {
+            price: price,
+            timestamp: timestamp,
+            source: tx-sender
+        })
+        (ok true)
+    )
+)
+
+;; Admin function to manage approved tokens
+;; Update admin functions with validation
+
+(define-public (set-approved-token (token principal) (approved bool))
+    (begin
+        (asserts! (is-eq tx-sender (var-get contract-owner)) ERR-NOT-AUTHORIZED)
+        (asserts! (is-valid-principal token) ERR-INVALID-ADDRESS)
+        (asserts! (not (is-eq token .base)) ERR-INVALID-TOKEN)  ;; Prevent setting base token
+        
+        ;; Additional check to prevent removing critical tokens
+        (asserts! (or 
+            approved  ;; If we're approving, this check doesn't matter
+            (not (is-critical-token token))  ;; If removing, check it's not critical
+        ) ERR-NOT-AUTHORIZED)
+        
+        (map-set approved-tokens token approved)
+        (ok true)
+    )
+)
