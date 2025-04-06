@@ -374,3 +374,52 @@
         true  ;; Remove the principal-destruct? check as it's not needed
     )
 )
+
+(define-private (is-valid-symbol (symbol (string-ascii 10)))
+    (and
+        (not (is-eq symbol ""))  ;; Can't be empty
+        (not (is-eq symbol " "))  ;; Can't be just whitespace
+        (>= (len symbol) u2)      ;; Must be at least 2 chars
+    )
+)
+
+(define-private (is-critical-token (token principal))
+    ;; Add any tokens that shouldn't be removed
+    (or 
+        (is-eq token .wrapped-btc)
+        (is-eq token .wrapped-stx)
+    )
+)
+
+(define-private (is-critical-symbol (symbol (string-ascii 10)))
+    ;; Add any symbols that shouldn't be removed
+    (or
+        (is-eq symbol "BTC-USD")
+        (is-eq symbol "STX-USD")
+    )
+)
+
+;; Read-only functions
+
+(define-read-only (get-option (option-id uint))
+    (map-get? options option-id)
+)
+
+(define-read-only (get-user-position (user principal))
+    (map-get? user-positions user)
+)
+
+(define-read-only (get-protocol-fee-rate)
+    (var-get protocol-fee-rate)
+)
+
+;; Admin functions
+
+(define-public (set-protocol-fee-rate (new-rate uint))
+    (begin
+        (asserts! (is-eq tx-sender (var-get contract-owner)) ERR-NOT-AUTHORIZED)
+        (asserts! (<= new-rate u1000) ERR-INVALID-PREMIUM)  ;; Max 10%
+        (var-set protocol-fee-rate new-rate)
+        (ok true)
+    )
+)
